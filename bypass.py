@@ -1,5 +1,5 @@
-import json
 import requests
+import json
 from bs4 import BeautifulSoup
 
 
@@ -32,6 +32,7 @@ if __name__ == "__main__":
     rawData: list = [i.split("=") for i in rawInput.split("?")[1].split("&")]
     
     anchorParams: dict = {item[0]:item[1] for item in rawData}
+    anchorParams["size"] = "invisible"
     reloadParams: dict = {
         "k": anchorParams["k"]
     }
