@@ -49,4 +49,4 @@ if __name__ == "__main__":
     response = session.post(APIs["reload"], params=reloadParams, data=reloadData)
     token: str = getReloadToken(response.text)
     
-    print(token)
+    print(f"\n\nTOKEN: {token}")
